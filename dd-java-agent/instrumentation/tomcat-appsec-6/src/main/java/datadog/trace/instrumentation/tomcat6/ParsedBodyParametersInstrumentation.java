@@ -20,7 +20,6 @@ import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import net.bytebuddy.asm.Advice;
 import org.apache.tomcat.util.http.Parameters;
@@ -53,29 +52,10 @@ public class ParsedBodyParametersInstrumentation extends Instrumenter.AppSec
               .build());
 
   private IReferenceMatcher postProcessReferenceMatcher(final ReferenceMatcher origMatcher) {
-    return new IReferenceMatcher() {
-      @Override
-      public boolean matches(ClassLoader loader) {
-        return origMatcher.matches(loader)
-            && (PARAM_HASH_VALUES_MAP_REFERENCE_MATCHER.matches(loader)
-                || PARAM_HASH_VALUES_MAP_REFERENCE_MATCHER.matches(loader));
-      }
-
-      @Override
-      public List<Reference.Mismatch> getMismatchedReferenceSources(ClassLoader loader) {
-        List<Reference.Mismatch> allMismatches =
-            new ArrayList<>(origMatcher.getMismatchedReferenceSources(loader));
-        List<Reference.Mismatch> mismatchesMap =
-            PARAM_HASH_VALUES_MAP_REFERENCE_MATCHER.getMismatchedReferenceSources(loader);
-        List<Reference.Mismatch> mismatchesHashMap =
-            PARAM_HASH_VALUES_HASH_MAP_REFERENCE_MATCHER.getMismatchedReferenceSources(loader);
-        if (!mismatchesHashMap.isEmpty() && !mismatchesMap.isEmpty()) {
-          allMismatches.addAll(mismatchesHashMap);
-          allMismatches.addAll(mismatchesMap);
-        }
-        return allMismatches;
-      }
-    };
+    return new IReferenceMatcher.ConjunctionReferenceMatcher(
+        origMatcher,
+        new IReferenceMatcher.DisjunctionReferenceMatcher(
+            PARAM_HASH_VALUES_MAP_REFERENCE_MATCHER, PARAM_HASH_VALUES_HASH_MAP_REFERENCE_MATCHER));
   }
 
   @Override
