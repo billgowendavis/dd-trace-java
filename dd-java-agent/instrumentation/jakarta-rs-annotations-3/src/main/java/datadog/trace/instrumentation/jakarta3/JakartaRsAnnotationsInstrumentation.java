@@ -19,7 +19,9 @@ import datadog.trace.bootstrap.ContextStore;
 import datadog.trace.bootstrap.InstrumentationContext;
 import datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.container.AsyncResponse;
+import jakarta.ws.rs.core.PathSegment;
 import java.lang.reflect.Method;
 import java.util.Map;
 import net.bytebuddy.asm.Advice;
@@ -154,5 +156,7 @@ public final class JakartaRsAnnotationsInstrumentation extends Instrumenter.Trac
       // else span finished by AsyncResponseAdvice
       scope.close();
     }
+
+    private void muzzleCheck(@PathParam("foo") PathSegment foo) {}
   }
 }
