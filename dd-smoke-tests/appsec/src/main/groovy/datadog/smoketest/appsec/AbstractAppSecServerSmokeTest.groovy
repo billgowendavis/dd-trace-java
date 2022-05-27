@@ -38,7 +38,7 @@ abstract class AbstractAppSecServerSmokeTest extends AbstractServerSmokeTest {
 
   @Shared
   protected String[] defaultAppSecProperties = [
-    "-Ddd.appsec.enabled=true",
+    "-Ddd.appsec.enabled=${System.getProperty('smoke_test.appsec.enabled') ?: 'true'}",
     "-Ddd.profiling.enabled=false",
     // decoding received traces is only available for v0.5 right now
     "-Ddd.trace.agent.v0.5.enabled=true",

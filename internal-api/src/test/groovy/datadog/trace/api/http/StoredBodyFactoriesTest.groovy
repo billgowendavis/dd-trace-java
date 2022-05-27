@@ -81,7 +81,7 @@ class StoredBodyFactoriesTest extends DDSpecification {
     2 * ig.getCallback(EVENTS.requestBodyDone()) >> Mock(BiFunction)
 
     when:
-    Flow f = StoredBodyFactories.maybeDeliverBodyInOneGo({ 'body' } as Supplier<CharSequence>)
+    Flow f = StoredBodyFactories.maybeDeliverBodyInOneGo({ 'body' } as Supplier<CharSequence>, reqCtx)
 
     then:
     1 * agentSpan.requestContext >> requestContext

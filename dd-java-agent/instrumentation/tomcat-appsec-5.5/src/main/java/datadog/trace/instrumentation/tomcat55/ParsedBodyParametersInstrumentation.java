@@ -3,11 +3,12 @@ package datadog.trace.instrumentation.tomcat55;
 import static datadog.trace.agent.tooling.bytebuddy.matcher.ClassLoaderMatchers.hasClassesNamed;
 import static datadog.trace.agent.tooling.bytebuddy.matcher.NameMatchers.named;
 import static datadog.trace.api.gateway.Events.EVENTS;
-import static datadog.trace.bootstrap.instrumentation.api.AgentTracer.activeSpan;
 import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
 import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 
 import com.google.auto.service.AutoService;
+import datadog.trace.advice.ActiveRequestContext;
+import datadog.trace.advice.RequiresRequestContext;
 import datadog.trace.agent.tooling.Instrumenter;
 import datadog.trace.agent.tooling.muzzle.IReferenceMatcher;
 import datadog.trace.agent.tooling.muzzle.Reference;
@@ -17,7 +18,6 @@ import datadog.trace.api.gateway.CallbackProvider;
 import datadog.trace.api.gateway.Flow;
 import datadog.trace.api.gateway.RequestContext;
 import datadog.trace.bootstrap.CallDepthThreadLocalMap;
-import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
 import java.util.Hashtable;
 import net.bytebuddy.asm.Advice;
@@ -91,6 +91,7 @@ public class ParsedBodyParametersInstrumentation extends Instrumenter.AppSec
   }
 
   @SuppressWarnings("Duplicates")
+  @RequiresRequestContext
   public static class ProcessParametersAdvice {
     @Advice.OnMethodEnter(suppress = Throwable.class)
     static int before(
@@ -103,6 +104,7 @@ public class ParsedBodyParametersInstrumentation extends Instrumenter.AppSec
         paramValuesField = new Hashtable<>();
       }
       return depth;
+      // if there is no request context, skips the body, returns 0 and will skip after()
     }
 
     @Advice.OnMethodExit(suppress = Throwable.class, onThrowable = Throwable.class)
@@ -110,7 +112,8 @@ public class ParsedBodyParametersInstrumentation extends Instrumenter.AppSec
         @Advice.Local("origParamHashStringArray") Hashtable<String, String[]> origParamValues,
         @Advice.FieldValue(value = "paramHashStringArray", readOnly = false)
             Hashtable<String, String[]> paramValuesField,
-        @Advice.Enter final int depth) {
+        @Advice.Enter final int depth,
+        @ActiveRequestContext RequestContext<Object> reqCtx) {
       if (depth > 0) {
         return;
       }
@@ -121,19 +124,13 @@ public class ParsedBodyParametersInstrumentation extends Instrumenter.AppSec
           return;
         }
 
-        AgentSpan agentSpan = activeSpan();
-        if (agentSpan == null) {
-          return;
-        }
-
         CallbackProvider cbp = AgentTracer.get().instrumentationGateway();
         BiFunction<RequestContext<Object>, Object, Flow<Void>> callback =
             cbp.getCallback(EVENTS.requestBodyProcessed());
-        RequestContext<Object> requestContext = agentSpan.getRequestContext();
-        if (requestContext == null || callback == null) {
+        if (callback == null) {
           return;
         }
-        callback.apply(requestContext, paramValuesField);
+        callback.apply(reqCtx, paramValuesField);
       } finally {
         if (origParamValues != null) {
           origParamValues.putAll(paramValuesField);

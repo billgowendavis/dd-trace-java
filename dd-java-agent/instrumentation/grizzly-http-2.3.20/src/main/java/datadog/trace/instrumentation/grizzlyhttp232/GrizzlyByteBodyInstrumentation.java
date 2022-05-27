@@ -5,6 +5,7 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArgument;
 import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 
 import com.google.auto.service.AutoService;
+import datadog.trace.advice.RequiresRequestContext;
 import datadog.trace.agent.tooling.Instrumenter;
 import datadog.trace.api.http.StoredBodyFactories;
 import datadog.trace.api.http.StoredByteBody;
@@ -75,6 +76,7 @@ public class GrizzlyByteBodyInstrumentation extends Instrumenter.AppSec
   }
 
   @SuppressWarnings("Duplicates")
+  @RequiresRequestContext
   static class NIOInputStreamSetInputBufferAdvice {
     @Advice.OnMethodExit(suppress = Throwable.class)
     static void after(

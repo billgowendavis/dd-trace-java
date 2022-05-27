@@ -17,6 +17,7 @@ import datadog.telemetry.RequestBuilder;
 import datadog.telemetry.TelemetryRunnable;
 import datadog.telemetry.TelemetryServiceImpl;
 import datadog.trace.api.Config;
+import datadog.trace.api.ProductActivationConfig;
 import datadog.trace.api.gateway.SubscriptionService;
 import datadog.trace.api.time.SystemTimeSource;
 import datadog.trace.util.AgentThreadFactory;
@@ -28,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AppSecSystem {
+
+  public static volatile boolean ACTIVE;
 
   private static final long TELEMETRY_STOP_WAIT_MILLIS = 5000L;
 
@@ -53,11 +56,14 @@ public class AppSecSystem {
   private static void doStart(
       Instrumentation instrumentation, SubscriptionService gw, SharedCommunicationObjects sco) {
     final Config config = Config.get();
-    if (!config.isAppSecEnabled()) {
+    ProductActivationConfig appSecEnabledConfig = config.getAppSecEnabledConfig();
+    if (appSecEnabledConfig == ProductActivationConfig.FULLY_DISABLED) {
       log.debug("AppSec: disabled");
       return;
     }
-    log.debug("AppSec is starting");
+    log.info("AppSec is starting ({})", appSecEnabledConfig);
+
+    ACTIVE = appSecEnabledConfig == ProductActivationConfig.FULLY_ENABLED;
 
     //  TODO: FleetService should be shared with other components
     FleetService fleetService =

@@ -144,7 +144,7 @@ public class Agent {
 
     jmxFetchEnabled = isFeatureEnabled(AgentFeature.JMXFETCH);
     profilingEnabled = isFeatureEnabled(AgentFeature.PROFILING);
-    appSecEnabled = isFeatureEnabled(AgentFeature.APPSEC);
+    appSecEnabled = isAppSecNotFullyDisabled();
     cwsEnabled = isFeatureEnabled(AgentFeature.CWS);
 
     if (profilingEnabled) {
@@ -778,6 +778,7 @@ public class Agent {
 
   /** @return {@code true} if the agent feature is enabled */
   private static boolean isFeatureEnabled(AgentFeature feature) {
+    // must be kept in sync with logic from Config!
     final String featureEnabledSysprop = feature.getSystemProp();
     String featureEnabled = System.getProperty(featureEnabledSysprop);
     if (featureEnabled == null) {
@@ -791,6 +792,22 @@ public class Agent {
       // false unless it's explicitly set to "true"
       return Boolean.parseBoolean(featureEnabled) || "1".equals(featureEnabled);
     }
+  }
+
+  /** @see datadog.trace.api.ProductActivationConfig#fromString(String) */
+  private static boolean isAppSecNotFullyDisabled() {
+    // must be kept in sync with logic from Config!
+    final String featureEnabledSysprop = AgentFeature.APPSEC.systemProp;
+    String settingValue = System.getProperty(featureEnabledSysprop);
+    if (settingValue == null) {
+      settingValue = ddGetEnv(featureEnabledSysprop);
+    }
+
+    // defaults to inactive
+    return settingValue.equalsIgnoreCase("true")
+        || settingValue.equalsIgnoreCase("1")
+        || settingValue.equalsIgnoreCase("inactive")
+        || settingValue == null;
   }
 
   /** @return configured JMX start delay in seconds */

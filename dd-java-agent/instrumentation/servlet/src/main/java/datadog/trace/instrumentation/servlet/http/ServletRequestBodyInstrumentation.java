@@ -11,6 +11,8 @@ import static net.bytebuddy.matcher.ElementMatchers.takesArguments;
 import static net.bytebuddy.matcher.ElementMatchers.takesNoArguments;
 
 import com.google.auto.service.AutoService;
+import datadog.trace.advice.ActiveRequestContext;
+import datadog.trace.advice.RequiresRequestContext;
 import datadog.trace.agent.tooling.HelperInjector;
 import datadog.trace.agent.tooling.Instrumenter;
 import datadog.trace.api.function.BiFunction;
@@ -171,26 +173,20 @@ public class ServletRequestBodyInstrumentation extends Instrumenter.AppSec
   }
 
   @SuppressWarnings("Duplicates")
+  @RequiresRequestContext
   static class HttpServletGetInputStreamAdvice {
     @Advice.OnMethodExit(suppress = Throwable.class)
     static void after(
         @Advice.This final ServletRequest thiz,
-        @Advice.Return(readOnly = false) ServletInputStream is) {
+        @Advice.Return(readOnly = false) ServletInputStream is,
+        @ActiveRequestContext RequestContext<Object> reqCtx) {
       if (!(thiz instanceof HttpServletRequest) || is == null) {
         return;
       }
 
-      AgentSpan agentSpan = activeSpan();
-      if (agentSpan == null) {
-        return;
-      }
       HttpServletRequest req = (HttpServletRequest) thiz;
       Object alreadyWrapped = req.getAttribute("datadog.wrapped_request_body");
       if (alreadyWrapped != null || is instanceof ServletInputStreamWrapper) {
-        return;
-      }
-      RequestContext<Object> requestContext = agentSpan.getRequestContext();
-      if (requestContext == null) {
         return;
       }
 
@@ -226,7 +222,7 @@ public class ServletRequestBodyInstrumentation extends Instrumenter.AppSec
       }
 
       StoredByteBody storedByteBody =
-          new StoredByteBody(requestContext, requestStartCb, requestEndedCb, charset, lengthHint);
+          new StoredByteBody(reqCtx, requestStartCb, requestEndedCb, charset, lengthHint);
       ServletInputStreamWrapper servletInputStreamWrapper =
           new ServletInputStreamWrapper(is, storedByteBody);
 
@@ -235,6 +231,7 @@ public class ServletRequestBodyInstrumentation extends Instrumenter.AppSec
   }
 
   @SuppressWarnings("Duplicates")
+  @RequiresRequestContext
   static class HttpServletGetReaderAdvice {
     @Advice.OnMethodExit(suppress = Throwable.class)
     static void after(
