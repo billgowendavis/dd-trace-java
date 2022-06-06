@@ -1,72 +1,6 @@
 package datadog.trace.api;
 
-import static datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_HOST;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_TIMEOUT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_WRITER_TYPE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_ANALYTICS_SAMPLE_RATE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_REPORTING_INBAND;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_TRACE_RATE_LIMIT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_WAF_METRICS;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_CIVISIBILITY_AGENTLESS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_CIVISIBILITY_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_CLOCK_SYNC_PERIOD;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_CWS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_CWS_TLS_REFRESH;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DATA_STREAMS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DB_CLIENT_HOST_SPLIT_BY_INSTANCE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DB_CLIENT_HOST_SPLIT_BY_INSTANCE_TYPE_SUFFIX;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_CLASSFILE_DUMP_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_DIAGNOSTICS_INTERVAL;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_INSTRUMENT_THE_WORLD;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_MAX_PAYLOAD_SIZE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_METRICS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_POLL_INTERVAL;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_UPLOAD_BATCH_SIZE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_UPLOAD_FLUSH_INTERVAL;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_UPLOAD_TIMEOUT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_VERIFY_BYTECODE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DOGSTATSD_START_DELAY;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_GRPC_CLIENT_ERROR_STATUSES;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_GRPC_SERVER_ERROR_STATUSES;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HEALTH_METRICS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_ERROR_STATUSES;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_SPLIT_BY_DOMAIN;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_CLIENT_TAG_QUERY_STRING;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_ERROR_STATUSES;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_ROUTE_BASED_NAMING;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_HTTP_SERVER_TAG_QUERY_STRING;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_INTEGRATIONS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_JMX_FETCH_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_JMX_FETCH_MULTIPLE_RUNTIME_SERVICES_LIMIT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_LOGS_INJECTION_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PARTIAL_FLUSH_MIN_SPANS;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PERF_METRICS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PRIORITY_SAMPLING_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PRIORITY_SAMPLING_FORCE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PROPAGATION_EXTRACT_LOG_HEADER_NAMES_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PROPAGATION_STYLE_EXTRACT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_PROPAGATION_STYLE_INJECT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_RESOLVER_TYPE_POOL_SIZE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_RUNTIME_CONTEXT_FIELD_INJECTION;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SCOPE_DEPTH_LIMIT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SCOPE_ITERATION_KEEP_ALIVE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SERIALVERSIONUID_FIELD_INJECTION;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SERVICE_NAME;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SERVLET_ROOT_CONTEXT_SERVICE_NAME;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_SITE;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_AGENT_PORT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_AGENT_V05_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_ANALYTICS_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_ANNOTATIONS;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_ENABLED;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_EXECUTORS_ALL;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_METHODS;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_RATE_LIMIT;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_REPORT_HOSTNAME;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_TRACE_RESOLVER_ENABLED;
+import static datadog.trace.api.ConfigDefaults.*;
 import static datadog.trace.api.DDTags.HOST_TAG;
 import static datadog.trace.api.DDTags.INTERNAL_HOST_NAME;
 import static datadog.trace.api.DDTags.LANGUAGE_TAG_KEY;
@@ -76,7 +10,6 @@ import static datadog.trace.api.DDTags.SERVICE;
 import static datadog.trace.api.DDTags.SERVICE_TAG;
 import static datadog.trace.api.IdGenerationStrategy.RANDOM;
 import static datadog.trace.api.Platform.isJavaVersionAtLeast;
-import static datadog.trace.api.config.AppSecConfig.APPSEC_DEPENDENCIES;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_ENABLED;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_IP_ADDR_HEADER;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP;
@@ -106,35 +39,7 @@ import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_BATCH_SIZE
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_FLUSH_INTERVAL;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_TIMEOUT;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_VERIFY_BYTECODE;
-import static datadog.trace.api.config.GeneralConfig.API_KEY;
-import static datadog.trace.api.config.GeneralConfig.API_KEY_FILE;
-import static datadog.trace.api.config.GeneralConfig.AZURE_APP_SERVICES;
-import static datadog.trace.api.config.GeneralConfig.DATA_STREAMS_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_ARGS;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_HOST;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_NAMED_PIPE;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_PATH;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_PORT;
-import static datadog.trace.api.config.GeneralConfig.DOGSTATSD_START_DELAY;
-import static datadog.trace.api.config.GeneralConfig.ENV;
-import static datadog.trace.api.config.GeneralConfig.GLOBAL_TAGS;
-import static datadog.trace.api.config.GeneralConfig.HEALTH_METRICS_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.HEALTH_METRICS_STATSD_HOST;
-import static datadog.trace.api.config.GeneralConfig.HEALTH_METRICS_STATSD_PORT;
-import static datadog.trace.api.config.GeneralConfig.INTERNAL_EXIT_ON_FAILURE;
-import static datadog.trace.api.config.GeneralConfig.PERF_METRICS_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.PRIMARY_TAG;
-import static datadog.trace.api.config.GeneralConfig.RUNTIME_ID_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.RUNTIME_METRICS_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.SERVICE_NAME;
-import static datadog.trace.api.config.GeneralConfig.SITE;
-import static datadog.trace.api.config.GeneralConfig.TAGS;
-import static datadog.trace.api.config.GeneralConfig.TRACER_METRICS_BUFFERING_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.TRACER_METRICS_ENABLED;
-import static datadog.trace.api.config.GeneralConfig.TRACER_METRICS_IGNORED_RESOURCES;
-import static datadog.trace.api.config.GeneralConfig.TRACER_METRICS_MAX_AGGREGATES;
-import static datadog.trace.api.config.GeneralConfig.TRACER_METRICS_MAX_PENDING;
-import static datadog.trace.api.config.GeneralConfig.VERSION;
+import static datadog.trace.api.config.GeneralConfig.*;
 import static datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CHECK_PERIOD;
 import static datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CONFIG;
 import static datadog.trace.api.config.JmxFetchConfig.JMX_FETCH_CONFIG_DIR;
@@ -481,7 +386,6 @@ public class Config {
   private final boolean appSecWafMetrics;
   private final String appSecObfuscationParameterKeyRegexp;
   private final String appSecObfuscationParameterValueRegexp;
-  private final boolean appSecDependencies;
 
   private final boolean ciVisibilityEnabled;
   private final boolean ciVisibilityAgentlessEnabled;
@@ -560,6 +464,8 @@ public class Config {
   private final int cwsTlsRefresh;
 
   private final boolean dataStreamsEnabled;
+
+  private final boolean telemetryEnabled;
 
   private final boolean azureAppServices;
   private final String traceAgentPath;
@@ -987,6 +893,8 @@ public class Config {
         configProvider.getBoolean(
             PROFILING_UPLOAD_SUMMARY_ON_413, PROFILING_UPLOAD_SUMMARY_ON_413_DEFAULT);
 
+    telemetryEnabled = configProvider.getBoolean(TELEMETRY_ENABLED, DEFAULT_TELEMETRY_ENABLED);
+
     appSecEnabled = configProvider.getBoolean(APPSEC_ENABLED, DEFAULT_APPSEC_ENABLED);
     appSecReportingInband =
         configProvider.getBoolean(APPSEC_REPORTING_INBAND, DEFAULT_APPSEC_REPORTING_INBAND);
@@ -1010,8 +918,6 @@ public class Config {
         configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP, null);
     appSecObfuscationParameterValueRegexp =
         configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP, null);
-
-    appSecDependencies = configProvider.getBoolean(APPSEC_DEPENDENCIES, false);
 
     ciVisibilityEnabled =
         configProvider.getBoolean(CIVISIBILITY_ENABLED, DEFAULT_CIVISIBILITY_ENABLED);
@@ -1596,6 +1502,10 @@ public class Config {
     return profilingLegacyTracingIntegrationEnabled;
   }
 
+  public boolean isTelemetryEnabled() {
+    return telemetryEnabled;
+  }
+
   public boolean isAppSecEnabled() {
     return appSecEnabled;
   }
@@ -1630,10 +1540,6 @@ public class Config {
 
   public String getAppSecObfuscationParameterValueRegexp() {
     return appSecObfuscationParameterValueRegexp;
-  }
-
-  public boolean isAppSecDependencies() {
-    return appSecDependencies;
   }
 
   public boolean isCiVisibilityEnabled() {
@@ -2037,7 +1943,6 @@ public class Config {
     /// The site name of the site instance in Azure where the traced application is running.
     String siteName = getEnv("WEBSITE_SITE_NAME");
     if (siteName != null) {
-      ConfigCollector.get().put("WEBSITE_SITE_NAME", siteName);
       aasTags.put("aas.site.name", siteName);
     }
 

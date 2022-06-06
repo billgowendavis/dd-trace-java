@@ -107,5 +107,7 @@ public final class ConfigDefaults {
 
   static final int DEFAULT_RESOLVER_TYPE_POOL_SIZE = 64;
 
+  static final boolean DEFAULT_TELEMETRY_ENABLED = false;
+
   private ConfigDefaults() {}
 }
