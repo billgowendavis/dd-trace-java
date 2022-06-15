@@ -1,4 +1,4 @@
-package com.datadog.debugger.tuf;
+package datadog.remote_config.tuf;
 
 /** Exception when checking configuration integrity */
 public class IntegrityCheckException extends RuntimeException {

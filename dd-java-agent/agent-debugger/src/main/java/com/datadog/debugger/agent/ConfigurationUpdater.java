@@ -1,9 +1,9 @@
 package com.datadog.debugger.agent;
 
 import com.datadog.debugger.instrumentation.InstrumentationResult;
-import com.datadog.debugger.poller.ConfigurationPoller;
 import com.datadog.debugger.sink.DebuggerSink;
 import com.datadog.debugger.util.ExceptionHelper;
+import datadog.remote_config.ConfigurationChangesListener;
 import datadog.trace.api.Config;
 import datadog.trace.bootstrap.debugger.DebuggerContext;
 import datadog.trace.bootstrap.debugger.ProbeRateLimiter;
@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * re-transformation of required classes
  */
 public class ConfigurationUpdater
-    implements ConfigurationPoller.ConfigurationChangesListener, DebuggerContext.ProbeResolver {
+    implements ConfigurationChangesListener<Configuration>, DebuggerContext.ProbeResolver {
 
   public static final int MAX_ALLOWED_PROBES = 100;
   public static final int MAX_ALLOWED_METRIC_PROBES = 100;
@@ -71,7 +71,8 @@ public class ConfigurationUpdater
   // Should be called by only one thread
   // Should return true if configuration is correctly applied
   // otherwise false to trigger polling backoff due to an error
-  public boolean accept(Configuration configuration) {
+  @Override
+  public boolean accept(Configuration configuration, PollingRateHinter pollingRateHinter) {
     try {
       if (configuration == null) {
         log.debug("debugConfig == null, apply empty configuration with no probes");
@@ -80,12 +81,29 @@ public class ConfigurationUpdater
       }
       Configuration newConfiguration = applyConfigurationFilters(configuration);
       applyNewConfiguration(newConfiguration);
+      setPollingHint(newConfiguration, pollingRateHinter);
       return true;
     } catch (Exception e) {
       ExceptionHelper.logException(log, e, "Error during accepting new debugger configuration:");
       return false;
     }
   }
+
+  private void setPollingHint(Configuration config, ConfigurationChangesListener.PollingRateHinter hinter) {
+    if (config == null) {
+      return;
+    }
+
+    // try to use server suggested interval
+    Configuration.OpsConfiguration opsConfiguration = config.getOpsConfig();
+    if (opsConfiguration != null) {
+      log.debug(
+          "Using server suggested polling interval of {}ms",
+          opsConfiguration.getPollIntervalDuration().toMillis());
+      hinter.suggestPollingRate(opsConfiguration.getPollIntervalDuration());
+    }
+  }
+
 
   private void applyNewConfiguration(Configuration newConfiguration) {
     ConfigurationComparer changes =

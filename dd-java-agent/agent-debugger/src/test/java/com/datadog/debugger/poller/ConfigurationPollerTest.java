@@ -57,7 +57,7 @@ public class ConfigurationPollerTest {
   @BeforeEach
   public void setUp() {
     url = server.url(URL_PATH);
-    lenient().when(config.getDebuggerMaxPayloadSize()).thenReturn((long) MAX_PAYLOAD_SIZE);
+    lenient().when(config.getRemoteConfigMaxPayloadSize()).thenReturn((long) MAX_PAYLOAD_SIZE);
     // use lenient here because not all tests needs this key
     lenient().when(config.getApiKey()).thenReturn("1c0ffee11c0ffee11c0ffee11c0ffee1");
     lenient().when(config.getRuntimeId()).thenReturn(UUID.randomUUID().toString());
@@ -77,7 +77,7 @@ public class ConfigurationPollerTest {
     String fixtureContent = getFixtureContent("/test_probe.json");
     String remoteConfig = RemoteConfigHelper.encode(fixtureContent, SERVICE_NAME);
     server.enqueue(new MockResponse().setResponseCode(200).setBody(remoteConfig));
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     when(config.getServiceName()).thenReturn(SERVICE_NAME);
     AtomicBoolean assertOk = new AtomicBoolean(false);
     ConfigurationPoller poller =
@@ -101,7 +101,7 @@ public class ConfigurationPollerTest {
     String fixtureContent = getFixtureContent("/test_probe_conditional.json");
     String remoteConfig = RemoteConfigHelper.encode(fixtureContent, SERVICE_NAME);
     server.enqueue(new MockResponse().setResponseCode(200).setBody(remoteConfig));
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     when(config.getServiceName()).thenReturn(SERVICE_NAME);
     AtomicBoolean assertOk = new AtomicBoolean(false);
     ConfigurationPoller poller =
@@ -125,7 +125,7 @@ public class ConfigurationPollerTest {
     String fixtureContent = getFixtureContent("/test_metric_probe.json");
     String remoteConfig = RemoteConfigHelper.encode(fixtureContent, SERVICE_NAME);
     server.enqueue(new MockResponse().setResponseCode(200).setBody(remoteConfig));
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     when(config.getServiceName()).thenReturn(SERVICE_NAME);
     AtomicBoolean assertOk = new AtomicBoolean(false);
     ConfigurationPoller poller =
@@ -149,7 +149,7 @@ public class ConfigurationPollerTest {
     URL res = getClass().getClassLoader().getResource("test_probe2.json");
     String probeDefinitionPath = Paths.get(res.toURI()).toFile().getAbsolutePath();
     when(config.getDebuggerProbeFileLocation()).thenReturn(probeDefinitionPath);
-    when(config.getFinalDebuggerProbeUrl()).thenReturn("http://localhost");
+    when(config.getFinalRemoteConfigUrl()).thenReturn("http://localhost");
     when(config.getServiceName()).thenReturn(SERVICE_NAME);
     AtomicBoolean assertOk = new AtomicBoolean(false);
     ConfigurationPoller poller =
@@ -175,7 +175,7 @@ public class ConfigurationPollerTest {
             .setResponseCode(500)
             .addHeader("Content-Type: application/json")
             .setBody("{\"message\": \"error\"}"));
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     ConfigurationPoller poller =
         new ConfigurationPoller(
             config,
@@ -191,13 +191,13 @@ public class ConfigurationPollerTest {
 
   @Test
   public void emptyUrl() {
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(null);
+    when(config.getFinalRemoteConfigUrl()).thenReturn(null);
     assertThrows(IllegalArgumentException.class, () -> new ConfigurationPoller(config, null));
   }
 
   @Test
   public void emptyProbeUrl() {
-    when(config.getFinalDebuggerProbeUrl()).thenReturn("");
+    when(config.getFinalRemoteConfigUrl()).thenReturn("");
     IllegalArgumentException thrown =
         assertThrows(
             IllegalArgumentException.class,
@@ -209,7 +209,7 @@ public class ConfigurationPollerTest {
   public void remoteConfiguration() throws IOException, URISyntaxException {
     String content = getFixtureContent("/tuf/remote-config.json");
     server.enqueue(new MockResponse().setResponseCode(200).setBody(content));
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     when(config.getServiceName()).thenReturn("debugger-demo-java");
 
     AtomicBoolean assertOk = new AtomicBoolean(false);
@@ -227,7 +227,7 @@ public class ConfigurationPollerTest {
 
   @Test
   public void tooLargeAgentResponse() throws IOException, URISyntaxException {
-    when(config.getFinalDebuggerProbeUrl()).thenReturn(server.url(URL_PATH).toString());
+    when(config.getFinalRemoteConfigUrl()).thenReturn(server.url(URL_PATH).toString());
     char[] charBuffer = new char[MAX_PAYLOAD_SIZE];
     Arrays.fill(charBuffer, 'a');
     String template = getFixtureContent("/test_template_id_config.json");

@@ -1,0 +1,31 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+}
+
+apply from: "$rootDir/gradle/java.gradle"
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+ext {
+  minimumBranchCoverage = 0.6
+  minimumInstructionCoverage = 0.8
+  excludedClassesCoverage = [
+  ]
+  excludedClassesBranchCoverage = [
+  ]
+  excludedClassesInstructionCoverage = []
+}
+
+
+dependencies {
+  implementation deps.slf4j
+  implementation deps.okhttp
+  implementation deps.moshi
+
+  implementation project(':internal-api')
+
+  testImplementation project(':utils:test-utils')
+}

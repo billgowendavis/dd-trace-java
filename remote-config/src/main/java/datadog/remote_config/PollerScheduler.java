@@ -1,4 +1,4 @@
-package com.datadog.debugger.poller;
+package datadog.remote_config;
 
 import datadog.trace.api.Config;
 import datadog.trace.util.AgentTaskScheduler;
@@ -61,7 +61,7 @@ class PollerScheduler {
     }
     this.scheduled =
         taskScheduler.scheduleAtFixedRate(
-            poller::pollDebuggerProbes,
+            poller::poll,
             poller,
             initialDelay,
             currentPollInterval,

@@ -4,10 +4,8 @@ import static com.datadog.appsec.util.StandardizedLogging.RulesInvalidReason.INV
 
 import com.datadog.appsec.util.AbortStartupException;
 import com.datadog.appsec.util.StandardizedLogging;
-import com.squareup.moshi.JsonAdapter;
-import com.squareup.moshi.Moshi;
-import com.squareup.moshi.Types;
-import datadog.communication.fleet.FleetService;
+import datadog.remote_config.ConfigurationPoller;
+import datadog.remote_config.Product;
 import datadog.trace.api.Config;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -15,28 +13,22 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
-import okio.BufferedSource;
-import okio.Okio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 
 public class AppSecConfigServiceImpl implements AppSecConfigService {
 
   private static final Logger log = LoggerFactory.getLogger(AppSecConfigServiceImpl.class);
 
   private static final String DEFAULT_CONFIG_LOCATION = "default_config.json";
-  private static final JsonAdapter<Map<String, Object>> ADAPTER =
-      new Moshi.Builder()
-          .build()
-          .adapter(Types.newParameterizedType(Map.class, String.class, Object.class));
 
-  private final FleetService fleetService;
   // for new subconfig subscribers
   private final AtomicReference<Map<String, AppSecConfig>> lastConfig =
       new AtomicReference<>(Collections.emptyMap());
@@ -44,27 +36,27 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
       new ConcurrentHashMap<>();
   private final Config tracerConfig;
   private final List<TraceSegmentPostProcessor> traceSegmentPostProcessors = new ArrayList<>();
-  private volatile FleetService.FleetSubscription fleetSubscription;
+  private final ConfigurationPoller configurationPoller;
 
-  public AppSecConfigServiceImpl(Config tracerConfig, FleetService fleetService) {
+  public AppSecConfigServiceImpl(Config tracerConfig, @Nullable ConfigurationPoller configurationPoller) {
     this.tracerConfig = tracerConfig;
-    this.fleetService = fleetService;
+    this.configurationPoller = configurationPoller;
   }
 
-  private void subscribeFleetService(FleetService fleetService) {
-    this.fleetSubscription =
-        fleetService.subscribe(
-            FleetService.Product.APPSEC,
-            is -> {
-              try {
-                Map<String, AppSecConfig> stringObjectMap =
-                    deserializeConfig(Okio.buffer(Okio.source(is)));
-                distributeSubConfigurations(stringObjectMap);
-                this.lastConfig.set(stringObjectMap);
-              } catch (IOException e) {
-                log.error("Error deserializing appsec config", e);
-              }
-            });
+  private void subscribeConfigurationPoller() {
+    this.configurationPoller.addListener(
+        Product.ASM_DD,
+        AppSecConfigDeserializer.INSTANCE,
+        (newConfig, hinter) -> {
+          if (newConfig == null) {
+            // TODO: disable appsec
+            return true;
+          }
+          Map<String, AppSecConfig> configMap = Collections.singletonMap("waf", newConfig);
+          distributeSubConfigurations(configMap);
+          this.lastConfig.set(configMap);
+          return true;
+        });
   }
 
   private void distributeSubConfigurations(Map<String, AppSecConfig> newConfig) {
@@ -83,7 +75,7 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
   }
 
   @Override
-  public void init(boolean initFleetService) {
+  public void init() {
     Map<String, AppSecConfig> config;
     try {
       config = loadUserConfig(tracerConfig);
@@ -100,8 +92,8 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
       }
     }
     lastConfig.set(config);
-    if (initFleetService) {
-      subscribeFleetService(fleetService);
+    if (this.configurationPoller != null) {
+      subscribeConfigurationPoller();
     }
   }
 
@@ -121,30 +113,6 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
     return traceSegmentPostProcessors;
   }
 
-  // public for testing only
-  public static Map<String, AppSecConfig> deserializeConfig(BufferedSource src) throws IOException {
-    Map<String, Object> rawConfig = ADAPTER.fromJson(src);
-    if (rawConfig == null) {
-      throw new IOException("Unable deserialize Json config");
-    }
-
-    if (rawConfig.containsKey("version")) {
-      // in case if we have single config simulate multi-config structure
-      rawConfig = Collections.singletonMap("waf", rawConfig);
-    }
-
-    Map<String, AppSecConfig> ret = new LinkedHashMap<>();
-    for (Map.Entry<String, Object> entry : rawConfig.entrySet()) {
-      String key = entry.getKey();
-      Object value = entry.getValue();
-      if (!(value instanceof Map)) {
-        throw new IOException("Expect config to be a map");
-      }
-      ret.put(key, AppSecConfig.valueOf((Map<String, Object>) value));
-    }
-    return ret;
-  }
-
   private static Map<String, AppSecConfig> loadDefaultConfig() throws IOException {
     try (InputStream is =
         AppSecConfigServiceImpl.class
@@ -154,7 +122,8 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
         throw new IOException("Resource " + DEFAULT_CONFIG_LOCATION + " not found");
       }
 
-      Map<String, AppSecConfig> ret = deserializeConfig(Okio.buffer(Okio.source(is)));
+      Map<String, AppSecConfig> ret =
+          Collections.singletonMap("waf", AppSecConfigDeserializer.INSTANCE.deserialize(is));
 
       StandardizedLogging._initialConfigSourceAndLibddwafVersion(log, "<bundled config>");
       if (log.isInfoEnabled()) {
@@ -171,7 +140,8 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
       return null;
     }
     try (InputStream is = new FileInputStream(filename)) {
-      Map<String, AppSecConfig> ret = deserializeConfig(Okio.buffer(Okio.source(is)));
+      Map<String, AppSecConfig> ret = Collections.singletonMap(
+          "waf", AppSecConfigDeserializer.INSTANCE.deserialize(is));
 
       StandardizedLogging._initialConfigSourceAndLibddwafVersion(log, filename);
       if (log.isInfoEnabled()) {
@@ -196,9 +166,9 @@ public class AppSecConfigServiceImpl implements AppSecConfigService {
 
   @Override
   public void close() {
-    FleetService.FleetSubscription sub = this.fleetSubscription;
-    if (sub != null) {
-      sub.cancel();
+    if (this.configurationPoller == null) {
+      return;
     }
+    this.configurationPoller.removeListener(Product.ASM_DD);
   }
 }

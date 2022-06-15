@@ -1,4 +1,4 @@
-package com.datadog.debugger.poller;
+package datadog.remote_config;
 
 import java.io.IOException;
 import java.io.InputStream;

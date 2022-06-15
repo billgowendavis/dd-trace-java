@@ -20,7 +20,8 @@ import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_CLASSFILE_DUMP_E
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_DIAGNOSTICS_INTERVAL;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_ENABLED;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_INSTRUMENT_THE_WORLD;
-import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_MAX_PAYLOAD_SIZE;
+import static datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_ENABLED;
+import static datadog.trace.api.ConfigDefaults.DEFAULT_REMOTE_CONFIG_MAX_PAYLOAD_SIZE;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_METRICS_ENABLED;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_POLL_INTERVAL;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_DEBUGGER_UPLOAD_BATCH_SIZE;
@@ -95,11 +96,9 @@ import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_DIAGNOSTICS_INTER
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_ENABLED;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_EXCLUDE_FILE;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_INSTRUMENT_THE_WORLD;
-import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_MAX_PAYLOAD_SIZE;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_METRICS_ENABLED;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_POLL_INTERVAL;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_PROBE_FILE_LOCATION;
-import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_PROBE_URL;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_SNAPSHOT_URL;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_BATCH_SIZE;
 import static datadog.trace.api.config.DebuggerConfig.DEBUGGER_UPLOAD_FLUSH_INTERVAL;
@@ -185,6 +184,9 @@ import static datadog.trace.api.config.ProfilingConfig.PROFILING_UPLOAD_SUMMARY_
 import static datadog.trace.api.config.ProfilingConfig.PROFILING_UPLOAD_TIMEOUT;
 import static datadog.trace.api.config.ProfilingConfig.PROFILING_UPLOAD_TIMEOUT_DEFAULT;
 import static datadog.trace.api.config.ProfilingConfig.PROFILING_URL;
+import static datadog.trace.api.config.RemoteConfigConfig.REMOTE_CONFIG_ENABLED;
+import static datadog.trace.api.config.RemoteConfigConfig.REMOTE_CONFIG_MAX_PAYLOAD_SIZE;
+import static datadog.trace.api.config.RemoteConfigConfig.REMOTE_CONFIG_URL;
 import static datadog.trace.api.config.TraceInstrumentationConfig.DB_CLIENT_HOST_SPLIT_BY_INSTANCE;
 import static datadog.trace.api.config.TraceInstrumentationConfig.DB_CLIENT_HOST_SPLIT_BY_INSTANCE_TYPE_SUFFIX;
 import static datadog.trace.api.config.TraceInstrumentationConfig.GRPC_CLIENT_ERROR_STATUSES;
@@ -487,7 +489,8 @@ public class Config {
 
   private final boolean debuggerEnabled;
   private final String debuggerSnapshotUrl;
-  private final String debuggerProbeUrl;
+  private final boolean remoteConfigEnabled;
+  private final String remoteConfigUrl;
   private final int debuggerUploadTimeout;
   private final int debuggerUploadFlushInterval;
   private final boolean debuggerClassFileDumpEnabled;
@@ -496,7 +499,7 @@ public class Config {
   private final boolean debuggerMetricEnabled;
   private final String debuggerProbeFileLocation;
   private final int debuggerUploadBatchSize;
-  private final long debuggerMaxPayloadSize;
+  private final long remoteConfigMaxPayloadSize;
   private final boolean debuggerVerifyByteCode;
   private final boolean debuggerInstrumentTheWorld;
   private final String debuggerExcludeFile;
@@ -1031,9 +1034,14 @@ public class Config {
       ciVisibilityAgentlessUrl = null;
     }
 
+    remoteConfigEnabled = configProvider.getBoolean(REMOTE_CONFIG_ENABLED, DEFAULT_REMOTE_CONFIG_ENABLED);
+    remoteConfigUrl = configProvider.getString(REMOTE_CONFIG_URL);
+    remoteConfigMaxPayloadSize =
+        configProvider.getInteger(REMOTE_CONFIG_MAX_PAYLOAD_SIZE, DEFAULT_REMOTE_CONFIG_MAX_PAYLOAD_SIZE)
+            * 1024;
+
     debuggerEnabled = configProvider.getBoolean(DEBUGGER_ENABLED, DEFAULT_DEBUGGER_ENABLED);
     debuggerSnapshotUrl = configProvider.getString(DEBUGGER_SNAPSHOT_URL);
-    debuggerProbeUrl = configProvider.getString(DEBUGGER_PROBE_URL);
     debuggerUploadTimeout =
         configProvider.getInteger(DEBUGGER_UPLOAD_TIMEOUT, DEFAULT_DEBUGGER_UPLOAD_TIMEOUT);
     debuggerUploadFlushInterval =
@@ -1054,9 +1062,6 @@ public class Config {
     debuggerProbeFileLocation = configProvider.getString(DEBUGGER_PROBE_FILE_LOCATION);
     debuggerUploadBatchSize =
         configProvider.getInteger(DEBUGGER_UPLOAD_BATCH_SIZE, DEFAULT_DEBUGGER_UPLOAD_BATCH_SIZE);
-    debuggerMaxPayloadSize =
-        configProvider.getInteger(DEBUGGER_MAX_PAYLOAD_SIZE, DEFAULT_DEBUGGER_MAX_PAYLOAD_SIZE)
-            * 1024;
     debuggerVerifyByteCode =
         configProvider.getBoolean(DEBUGGER_VERIFY_BYTECODE, DEFAULT_DEBUGGER_VERIFY_BYTECODE);
     debuggerInstrumentTheWorld =
@@ -1676,8 +1681,8 @@ public class Config {
     return debuggerUploadBatchSize;
   }
 
-  public long getDebuggerMaxPayloadSize() {
-    return debuggerMaxPayloadSize;
+  public long getRemoteConfigMaxPayloadSize() {
+    return remoteConfigMaxPayloadSize;
   }
 
   public boolean isDebuggerVerifyByteCode() {
@@ -1692,12 +1697,12 @@ public class Config {
     return debuggerExcludeFile;
   }
 
-  public String getFinalDebuggerProbeUrl() {
-    if (debuggerProbeUrl != null) {
-      return debuggerProbeUrl;
-    }
-    // by default poll from datadog agent
-    return "http://" + agentHost + ":" + agentPort;
+  public boolean isRemoteConfigEnabled() {
+    return remoteConfigEnabled;
+  }
+
+  public String getFinalRemoteConfigUrl() {
+    return remoteConfigUrl;
   }
 
   public String getFinalDebuggerSnapshotUrl() {
@@ -2655,7 +2660,7 @@ public class Config {
         + ", debuggerSnapshotUrl="
         + debuggerSnapshotUrl
         + ", debuggerProbeUrl="
-        + debuggerProbeUrl
+        + remoteConfigUrl
         + ", debuggerUploadTimeout="
         + debuggerUploadTimeout
         + ", debuggerUploadFlushInterval="
@@ -2673,7 +2678,7 @@ public class Config {
         + ", debuggerUploadBatchSize="
         + debuggerUploadBatchSize
         + ", debuggerMaxPayloadSize="
-        + debuggerMaxPayloadSize
+        + remoteConfigMaxPayloadSize
         + ", debuggerVerifyByteCode="
         + debuggerVerifyByteCode
         + ", debuggerInstrumentTheWorld="

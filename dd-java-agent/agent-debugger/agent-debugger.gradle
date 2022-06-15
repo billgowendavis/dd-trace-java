@@ -39,6 +39,9 @@ dependencies {
   implementation deps.okhttp
   implementation deps.dogstatsd
 
+  compileOnly project(':remote-config')
+  testImplementation project(':remote-config')
+
   testImplementation deps.junit5
   testImplementation group: 'org.ow2.asm', name: 'asm-util', version: versions.asm
   testImplementation group: "org.junit.jupiter", name: "junit-jupiter-params", version: "${versions.junit5}"
