@@ -213,6 +213,7 @@ import static datadog.trace.api.config.TraceInstrumentationConfig.KAFKA_CLIENT_P
 import static datadog.trace.api.config.TraceInstrumentationConfig.LOGS_INJECTION_ENABLED;
 import static datadog.trace.api.config.TraceInstrumentationConfig.LOGS_MDC_TAGS_INJECTION_ENABLED;
 import static datadog.trace.api.config.TraceInstrumentationConfig.MESSAGE_BROKER_SPLIT_BY_DESTINATION;
+import static datadog.trace.api.config.TraceInstrumentationConfig.OBFUSCATION_QUERY_STRING_REGEXP;
 import static datadog.trace.api.config.TraceInstrumentationConfig.OSGI_SEARCH_DEPTH;
 import static datadog.trace.api.config.TraceInstrumentationConfig.PLAY_REPORT_HTTP_STATUS;
 import static datadog.trace.api.config.TraceInstrumentationConfig.RABBIT_PROPAGATION_DISABLED_EXCHANGES;
@@ -529,6 +530,7 @@ public class Config {
   private final boolean igniteCacheIncludeKeys;
 
   private final int osgiSearchDepth;
+  private final String obfuscationQueryRegexp;
 
   // TODO: remove at a future point.
   private final boolean playReportHttpStatus;
@@ -1122,6 +1124,8 @@ public class Config {
     igniteCacheIncludeKeys = configProvider.getBoolean(IGNITE_CACHE_INCLUDE_KEYS, false);
 
     osgiSearchDepth = configProvider.getInteger(OSGI_SEARCH_DEPTH, 1);
+
+    obfuscationQueryRegexp = configProvider.getString(OBFUSCATION_QUERY_STRING_REGEXP);
 
     playReportHttpStatus = configProvider.getBoolean(PLAY_REPORT_HTTP_STATUS, false);
 
@@ -1784,6 +1788,10 @@ public class Config {
 
   public int getOsgiSearchDepth() {
     return osgiSearchDepth;
+  }
+
+  public String getObfuscationQueryRegexp() {
+    return obfuscationQueryRegexp;
   }
 
   public boolean getPlayReportHttpStatus() {
