@@ -160,10 +160,11 @@ public class AgentInstaller {
       log.debug("Installed {} instrumenter(s)", numInstrumenters);
     }
 
+    OutlinePoolStrategy.beginInstall();
     try {
       return transformerBuilder.installOn(inst);
     } finally {
-      OutlinePoolStrategy.agentInstalled();
+      OutlinePoolStrategy.endInstall();
     }
   }
 
