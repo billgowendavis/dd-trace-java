@@ -3,6 +3,7 @@ apply from: "$rootDir/gradle/java.gradle"
 dependencies {
   implementation deps.slf4j
 
+  api project(':remote-config')
   implementation project(':internal-api')
   implementation project(':utils:container-utils')
   implementation project(':utils:socket-utils')

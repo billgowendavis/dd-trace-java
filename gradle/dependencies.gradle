@@ -25,7 +25,7 @@ final class CachedData {
     jnr_unixsocket: "0.28",
     commons       : "3.2",
     mockito       : '4.4.0',
-    moshi         : '1.9.2',
+    moshi         : '1.11.0',
     testcontainers: '1.17.3',
     jmc           : "8.1.0-SNAPSHOT",
     autoservice   : "1.0-rc7",
@@ -112,6 +112,7 @@ final class CachedData {
       exclude(project(':communication'))
 
       exclude(project(':utils:container-utils'))
+      exclude(project(':remote-config'))
       exclude(dependency("org.slf4j:slf4j-api:${versions.slf4j}"))
     }
   ]
