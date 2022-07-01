@@ -5,6 +5,7 @@ import static datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_TIMEOUT;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_AGENT_WRITER_TYPE;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_ANALYTICS_SAMPLE_RATE;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_ENABLED;
+import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_IAST_ENABLED;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_REPORTING_INBAND;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_TRACE_RATE_LIMIT;
 import static datadog.trace.api.ConfigDefaults.DEFAULT_APPSEC_WAF_METRICS;
@@ -86,6 +87,7 @@ import static datadog.trace.api.config.AppSecConfig.APPSEC_REPORT_TIMEOUT_SEC;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_RULES_FILE;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_TRACE_RATE_LIMIT;
 import static datadog.trace.api.config.AppSecConfig.APPSEC_WAF_METRICS;
+import static datadog.trace.api.config.AppSecIastConfig.APPSEC_IAST_ENABLED;
 import static datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AGENTLESS_ENABLED;
 import static datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_AGENTLESS_URL;
 import static datadog.trace.api.config.CiVisibilityConfig.CIVISIBILITY_ENABLED;
@@ -484,6 +486,8 @@ public class Config {
   private final boolean appSecWafMetrics;
   private final String appSecObfuscationParameterKeyRegexp;
   private final String appSecObfuscationParameterValueRegexp;
+
+  private final boolean appSecIastEnabled;
 
   private final boolean ciVisibilityEnabled;
   private final boolean ciVisibilityAgentlessEnabled;
@@ -1013,6 +1017,8 @@ public class Config {
         configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_KEY_REGEXP, null);
     appSecObfuscationParameterValueRegexp =
         configProvider.getString(APPSEC_OBFUSCATION_PARAMETER_VALUE_REGEXP, null);
+
+    appSecIastEnabled = configProvider.getBoolean(APPSEC_IAST_ENABLED, DEFAULT_APPSEC_IAST_ENABLED);
 
     ciVisibilityEnabled =
         configProvider.getBoolean(CIVISIBILITY_ENABLED, DEFAULT_CIVISIBILITY_ENABLED);
@@ -1635,6 +1641,10 @@ public class Config {
 
   public String getAppSecObfuscationParameterValueRegexp() {
     return appSecObfuscationParameterValueRegexp;
+  }
+
+  public boolean isAppSecIastEnabled() {
+    return appSecIastEnabled;
   }
 
   public boolean isCiVisibilityEnabled() {

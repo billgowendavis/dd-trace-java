@@ -51,6 +51,7 @@ public class AgentInstaller {
     if (Config.get().isTraceEnabled()
         || Config.get().isProfilingEnabled()
         || Config.get().isAppSecEnabled()
+        || Config.get().isAppSecIastEnabled()
         || Config.get().isCiVisibilityEnabled()) {
       installBytebuddyAgent(inst, false, new AgentBuilder.Listener[0]);
       if (DEBUG) {
@@ -169,6 +170,9 @@ public class AgentInstaller {
     }
     if (cfg.isAppSecEnabled()) {
       enabledSystems.add(Instrumenter.TargetSystem.APPSEC);
+    }
+    if (cfg.isAppSecIastEnabled()) {
+      enabledSystems.add(Instrumenter.TargetSystem.APPSEC_IAST);
     }
     if (cfg.isCiVisibilityEnabled()) {
       enabledSystems.add(Instrumenter.TargetSystem.CIVISIBILITY);
