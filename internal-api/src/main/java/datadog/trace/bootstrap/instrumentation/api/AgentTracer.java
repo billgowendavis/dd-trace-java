@@ -784,6 +784,7 @@ public class AgentTracer {
       return Collections.emptyList();
     }
 
+    @Override
     public PathwayContext getPathwayContext() {
       return NoopPathwayContext.INSTANCE;
     }
@@ -833,14 +834,16 @@ public class AgentTracer {
     }
 
     @Override
-    public void start(Consumer<StatsPoint> pointConsumer) {}
-
-    @Override
     public void setCheckpoint(
         String type, String group, String topic, Consumer<StatsPoint> pointConsumer) {}
 
     @Override
     public byte[] encode() throws IOException {
+      return null;
+    }
+
+    @Override
+    public String strEncode() throws IOException {
       return null;
     }
 

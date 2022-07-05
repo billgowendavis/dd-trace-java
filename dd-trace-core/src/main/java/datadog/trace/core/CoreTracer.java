@@ -5,7 +5,6 @@ import static datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
 import static datadog.trace.common.metrics.MetricsAggregatorFactory.createMetricsAggregator;
 import static datadog.trace.util.AgentThreadFactory.AGENT_THREAD_GROUP;
 import static datadog.trace.util.CollectionUtils.tryMakeImmutableMap;
-import static java.util.Base64.getEncoder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -38,7 +37,6 @@ import datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import datadog.trace.bootstrap.instrumentation.api.AgentScopeManager;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
-import datadog.trace.bootstrap.instrumentation.api.ExtractedPathwayContext;
 import datadog.trace.bootstrap.instrumentation.api.PathwayContext;
 import datadog.trace.bootstrap.instrumentation.api.ScopeSource;
 import datadog.trace.bootstrap.instrumentation.api.TagContext;
@@ -56,6 +54,7 @@ import datadog.trace.core.datastreams.DefaultPathwayContext;
 import datadog.trace.core.datastreams.StubDataStreamsCheckpointer;
 import datadog.trace.core.monitor.MonitoringImpl;
 import datadog.trace.core.propagation.ExtractedContext;
+import datadog.trace.core.propagation.ExtractedPathwayContext;
 import datadog.trace.core.propagation.HttpCodec;
 import datadog.trace.core.scopemanager.ContinuableScopeManager;
 import datadog.trace.core.taginterceptor.RuleFlags;
@@ -767,11 +766,9 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     }
     PathwayContext pathwayContext = ddSpanContext.getPathwayContext();
     try {
-      byte[] encodedContext = pathwayContext.encode();
-
+      String encodedContext = pathwayContext.strEncode();
       if (encodedContext != null) {
-        String strEncodedContext = getEncoder().encodeToString(encodedContext);
-        setter.set(carrier, PathwayContext.PROPAGATION_KEY, strEncodedContext);
+        setter.set(carrier, PathwayContext.PROPAGATION_KEY, encodedContext);
       }
     } catch (IOException e) {
       log.debug("Unable to set encode pathway context", e);

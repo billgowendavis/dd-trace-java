@@ -23,6 +23,7 @@ public class TagContext implements AgentSpan.Context.Extracted {
   public TagContext(final String origin, final Map<String, String> tags) {
     this.origin = origin;
     this.tags = tags;
+    this.pathwayContext = AgentTracer.NoopPathwayContext.INSTANCE;
   }
 
   public final String getOrigin() {

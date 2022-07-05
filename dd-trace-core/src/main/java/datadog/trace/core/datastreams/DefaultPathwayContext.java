@@ -1,6 +1,7 @@
 package datadog.trace.core.datastreams;
 
 import static java.util.Base64.getDecoder;
+import static java.util.Base64.getEncoder;
 
 import com.datadoghq.sketch.ddsketch.encoding.ByteArrayInput;
 import com.datadoghq.sketch.ddsketch.encoding.GrowingByteArrayOutput;
@@ -24,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 public class DefaultPathwayContext implements PathwayContext {
   private static final Logger log = LoggerFactory.getLogger(DefaultPathwayContext.class);
-  private static final String INITIALIZATION_TOPIC = "";
   private final Lock lock = new ReentrantLock();
   private final WellKnownTags wellKnownTags;
   private final TimeSource timeSource;
@@ -69,11 +69,6 @@ public class DefaultPathwayContext implements PathwayContext {
   @Override
   public boolean isStarted() {
     return started;
-  }
-
-  @Override
-  public void start(Consumer<StatsPoint> pointConsumer) {
-    setCheckpoint(null, null, INITIALIZATION_TOPIC, pointConsumer);
   }
 
   @Override
@@ -171,6 +166,15 @@ public class DefaultPathwayContext implements PathwayContext {
   }
 
   @Override
+  public String strEncode() throws IOException {
+    byte[] encoded = encode();
+    if (encoded == null) {
+      return null;
+    }
+    return getEncoder().encodeToString(encoded);
+  }
+
+  @Override
   public void setQueueTags(String type, String group, String topic) {
     this.type = type;
     this.group = group;
@@ -227,8 +231,7 @@ public class DefaultPathwayContext implements PathwayContext {
     public boolean accept(String key, String value) {
       if (PathwayContext.PROPAGATION_KEY.equalsIgnoreCase(key)) {
         try {
-          byte[] bytesValue = getDecoder().decode(value);
-          extractedContext = decode(timeSource, wellKnownTags, bytesValue);
+          extractedContext = strDecode(timeSource, wellKnownTags, value);
         } catch (IOException e) {
           return false;
         }
@@ -251,6 +254,12 @@ public class DefaultPathwayContext implements PathwayContext {
       log.debug("Extracted context: {} ", pathwayContextExtractor.extractedContext);
     }
     return pathwayContextExtractor.extractedContext;
+  }
+
+  public static DefaultPathwayContext strDecode(
+      TimeSource timeSource, WellKnownTags wellKnownTags, String data) throws IOException {
+    byte[] bytesValue = getDecoder().decode(data);
+    return decode(timeSource, wellKnownTags, bytesValue);
   }
 
   public static DefaultPathwayContext decode(

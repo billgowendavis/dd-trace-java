@@ -1,6 +1,9 @@
-package datadog.trace.bootstrap.instrumentation.api;
+package datadog.trace.core.propagation;
 
 import datadog.trace.api.DDId;
+import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
+import datadog.trace.bootstrap.instrumentation.api.AgentTrace;
+import datadog.trace.bootstrap.instrumentation.api.PathwayContext;
 import java.util.Map;
 
 public class ExtractedPathwayContext implements AgentSpan.Context.Extracted {
