@@ -334,16 +334,7 @@ public class AgentTracer {
     public <C> void inject(AgentSpan span, C carrier, Setter<C> setter, PropagationStyle style) {}
 
     @Override
-    public <C> void injectPathwayContext(
-        AgentSpan span, String type, String group, C carrier, BinarySetter<C> setter) {}
-
-    @Override
     public <C> Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
-      return null;
-    }
-
-    @Override
-    public <C> PathwayContext extractPathwayContext(C carrier, BinaryContextVisitor<C> getter) {
       return null;
     }
 
@@ -740,17 +731,8 @@ public class AgentTracer {
     public <C> void inject(AgentSpan span, C carrier, Setter<C> setter, PropagationStyle style) {}
 
     @Override
-    public <C> void injectPathwayContext(
-        AgentSpan span, String type, String group, C carrier, BinarySetter<C> setter) {}
-
-    @Override
     public <C> Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
       return NoopContext.INSTANCE;
-    }
-
-    @Override
-    public <C> PathwayContext extractPathwayContext(C carrier, BinaryContextVisitor<C> getter) {
-      return null;
     }
   }
 
@@ -861,5 +843,8 @@ public class AgentTracer {
     public byte[] encode() throws IOException {
       return null;
     }
+
+    @Override
+    public void setQueueTags(String type, String group, String topic) {}
   }
 }

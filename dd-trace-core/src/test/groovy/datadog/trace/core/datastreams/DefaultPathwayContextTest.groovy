@@ -343,10 +343,10 @@ class DefaultPathwayContextTest extends DDCoreSpecification {
     pointConsumer.points[0].hash != pointConsumer.points[1].hash
   }
 
-  class MapContextVisitor implements AgentPropagation.BinaryContextVisitor<Map<String, byte[]>> {
+  class MapContextVisitor implements AgentPropagation.ContextVisitor<Map<String, String>> {
     @Override
-    void forEachKey(Map<String, byte[]> carrier, AgentPropagation.BinaryKeyClassifier classifier) {
-      for (Map.Entry<String, byte[]> entry : carrier.entrySet()) {
+    void forEachKey(Map<String, String> carrier, AgentPropagation.KeyClassifier classifier) {
+      for (Map.Entry<String, String> entry : carrier.entrySet()) {
         classifier.accept(entry.key, entry.value)
       }
     }

@@ -14,6 +14,8 @@ public class TagContext implements AgentSpan.Context.Extracted {
   private final Map<String, String> tags;
   private Object requestContextData;
 
+  private PathwayContext pathwayContext;
+
   public TagContext() {
     this(null, null);
   }
@@ -85,8 +87,13 @@ public class TagContext implements AgentSpan.Context.Extracted {
     return this;
   }
 
+  public final TagContext withPathwayContext(PathwayContext pathwayContext) {
+    this.pathwayContext = pathwayContext;
+    return this;
+  }
+
   @Override
   public PathwayContext getPathwayContext() {
-    return null;
+    return pathwayContext;
   }
 }

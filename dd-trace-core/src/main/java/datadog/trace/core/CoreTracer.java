@@ -5,6 +5,7 @@ import static datadog.trace.api.ConfigDefaults.DEFAULT_ASYNC_PROPAGATING;
 import static datadog.trace.common.metrics.MetricsAggregatorFactory.createMetricsAggregator;
 import static datadog.trace.util.AgentThreadFactory.AGENT_THREAD_GROUP;
 import static datadog.trace.util.CollectionUtils.tryMakeImmutableMap;
+import static java.util.Base64.getEncoder;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -37,6 +38,7 @@ import datadog.trace.bootstrap.instrumentation.api.AgentScope;
 import datadog.trace.bootstrap.instrumentation.api.AgentScopeManager;
 import datadog.trace.bootstrap.instrumentation.api.AgentSpan;
 import datadog.trace.bootstrap.instrumentation.api.AgentTracer;
+import datadog.trace.bootstrap.instrumentation.api.ExtractedPathwayContext;
 import datadog.trace.bootstrap.instrumentation.api.PathwayContext;
 import datadog.trace.bootstrap.instrumentation.api.ScopeSource;
 import datadog.trace.bootstrap.instrumentation.api.TagContext;
@@ -50,6 +52,7 @@ import datadog.trace.common.writer.WriterFactory;
 import datadog.trace.common.writer.ddintake.DDIntakeTraceInterceptor;
 import datadog.trace.context.ScopeListener;
 import datadog.trace.core.datastreams.DataStreamsCheckpointer;
+import datadog.trace.core.datastreams.DefaultPathwayContext;
 import datadog.trace.core.datastreams.StubDataStreamsCheckpointer;
 import datadog.trace.core.monitor.MonitoringImpl;
 import datadog.trace.core.propagation.ExtractedContext;
@@ -223,6 +226,7 @@ public class CoreTracer implements AgentTracer.TracerAPI {
   @Override
   public void onRootSpanStarted(AgentSpan root) {
     spanCheckpointer.onRootSpanStarted(root);
+    setDataStreamCheckpoint(root, null, null, null);
   }
 
   public static class CoreTracerBuilder {
@@ -746,24 +750,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     inject(span.context(), carrier, setter, style);
   }
 
-  @Override
-  public <C> void injectPathwayContext(
-      AgentSpan span, String type, String group, C carrier, BinarySetter<C> setter) {
-    PathwayContext pathwayContext = span.context().getPathwayContext();
-    pathwayContext.start(dataStreamsCheckpointer);
-
-    try {
-      byte[] encodedContext = span.context().getPathwayContext().encode();
-
-      if (encodedContext != null) {
-        log.debug("Injecting pathway context {}", pathwayContext);
-        setter.set(carrier, PathwayContext.PROPAGATION_KEY, encodedContext);
-      }
-    } catch (IOException e) {
-      log.debug("Unable to set encode pathway context", e);
-    }
-  }
-
   private <C> void inject(
       AgentSpan.Context context, C carrier, Setter<C> setter, PropagationStyle style) {
     if (!(context instanceof DDSpanContext)) {
@@ -779,16 +765,29 @@ public class CoreTracer implements AgentTracer.TracerAPI {
     } else {
       HttpCodec.inject(ddSpanContext, carrier, setter, style);
     }
+    PathwayContext pathwayContext = ddSpanContext.getPathwayContext();
+    try {
+      byte[] encodedContext = pathwayContext.encode();
+
+      if (encodedContext != null) {
+        String strEncodedContext = getEncoder().encodeToString(encodedContext);
+        setter.set(carrier, PathwayContext.PROPAGATION_KEY, strEncodedContext);
+      }
+    } catch (IOException e) {
+      log.debug("Unable to set encode pathway context", e);
+    }
   }
 
   @Override
   public <C> AgentSpan.Context.Extracted extract(final C carrier, final ContextVisitor<C> getter) {
-    return extractor.extract(carrier, getter);
-  }
-
-  @Override
-  public <C> PathwayContext extractPathwayContext(C carrier, BinaryContextVisitor<C> getter) {
-    return dataStreamsCheckpointer.extractPathwayContext(carrier, getter);
+    TagContext spanContext = extractor.extract(carrier, getter);
+    PathwayContext pathwayContext = dataStreamsCheckpointer.extractPathwayContext(carrier, getter);
+    if (spanContext != null) {
+      spanContext.withPathwayContext(pathwayContext);
+    } else if (pathwayContext instanceof DefaultPathwayContext) {
+      return new ExtractedPathwayContext(pathwayContext);
+    }
+    return spanContext;
   }
 
   @Override
@@ -1241,10 +1240,24 @@ public class CoreTracer implements AgentTracer.TracerAPI {
           coreTags = tc.getTags();
           origin = tc.getOrigin();
           requestContextData = tc.getRequestContextData();
+          pathwayContext =
+              tc.getPathwayContext().isStarted()
+                  ? tc.getPathwayContext()
+                  : dataStreamsCheckpointer.newPathwayContext();
+        } else if (parentContext instanceof ExtractedPathwayContext) {
+          ExtractedPathwayContext pc = (ExtractedPathwayContext) parentContext;
+          coreTags = null;
+          origin = null;
+          requestContextData = null;
+          pathwayContext =
+              pc.getPathwayContext().isStarted()
+                  ? pc.getPathwayContext()
+                  : dataStreamsCheckpointer.newPathwayContext();
         } else {
           coreTags = null;
           origin = null;
           requestContextData = null;
+          pathwayContext = dataStreamsCheckpointer.newPathwayContext();
         }
 
         rootSpanTags = localRootSpanTags;
@@ -1254,8 +1267,6 @@ public class CoreTracer implements AgentTracer.TracerAPI {
         if (endToEndStartTime > 0) {
           parentTrace.beginEndToEnd(endToEndStartTime);
         }
-
-        pathwayContext = dataStreamsCheckpointer.newPathwayContext();
       }
 
       if (serviceName == null) {
